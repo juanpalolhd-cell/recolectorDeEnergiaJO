@@ -1,38 +1,47 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-
+[RequireComponent(typeof(CharacterController))]
 public class MovimientoJugador : MonoBehaviour
 {
+    [Header("Movimiento")]
     [SerializeField] private float velocidad = 5f;
-    [SerializeField] private float fuerzaSalto = 5f; // Nueva variable para la fuerza
-
+    [Header("Salto y gravedad")]
+    [SerializeField] private float alturaSalto = 1.5f;
+    [SerializeField] private float gravedad = -9.81f;
     private Vector2 entrada;
-    private Rigidbody rb; // Referencia al componente de físicas 3D
-
-    private void Start()
+    private CharacterController controlador;
+    private float velocidadVertical;
+    private bool saltoSolicitado;
+    private void Awake()
     {
-            // Obtenemos el Rigidbody al iniciar el juego
-        rb = GetComponent<Rigidbody>();
+        controlador = GetComponent<CharacterController>();
     }
-
     public void OnMove(InputValue valor)
     {
         entrada = valor.Get<Vector2>();
     }
-
-    // Esta función se ejecuta automáticamente al presionar Espacio
     public void OnJump(InputValue valor)
     {
-        // Aplicamos un impulso físico vertical hacia arriba
-        rb.AddForce(Vector3.up * fuerzaSalto, ForceMode.Impulse);
+        if (valor.isPressed)
+            saltoSolicitado = true;
     }
-
     private void Update()
     {
-        Vector3 direccion = new Vector3(entrada.x, 0f, entrada.y);
-        transform.Translate(
-            direccion * velocidad * Time.deltaTime,
-            Space.World
+        bool enSuelo = controlador.isGrounded;
+        if (enSuelo && velocidadVertical < 0f)
+            velocidadVertical = -2f;
+        if (saltoSolicitado && enSuelo)
+            velocidadVertical = Mathf.Sqrt(
+            alturaSalto * -2f * gravedad
+            );
+        saltoSolicitado = false;
+        velocidadVertical += gravedad * Time.deltaTime;
+        Vector3 movimiento = new Vector3(
+        entrada.x * velocidad,
+        velocidadVertical,
+        entrada.y * velocidad
         );
+        controlador.Move(movimiento * Time.deltaTime);
     }
 }
+
